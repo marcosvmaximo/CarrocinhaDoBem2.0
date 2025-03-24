@@ -1,0 +1,27 @@
+<!-- configuracao.component.html -->
+<div class="card">
+    <h2>Configurações</h2>
+    <div class="p-fluid p-formgrid p-grid flex flex-column gap-5">
+        <div class="p-field p-col-12 p-md-4">
+            <label for="inputStyle">Estilo do Input</label>
+            <p-dropdown id="inputStyle" [(ngModel)]="config.inputStyle" [options]="inputStyles"></p-dropdown>
+        </div>
+        <div class="p-field p-col-12 p-md-4">
+            <label for="menuMode">Modo do Menu</label>
+            <p-dropdown id="menuMode" [(ngModel)]="config.menuMode" [options]="menuModes"></p-dropdown>
+        </div>
+        <div class="p-field p-col-12 p-md-4">
+            <label for="ripple">Ripple</label>
+            <p-checkbox id="ripple" [(ngModel)]="config.ripple"></p-checkbox>
+        </div>
+    </div>
+
+  <div class="mt-5">
+    <h2>Sair</h2>
+    <p-button icon="pi pi-arrow-right" label="Sair de sua conta" ngxTippy="Realizar Logout" (click)="deslogar()"></p-button>
+  </div>
+  <div class="mt-5">
+    <h2>Apagar Conta</h2>
+    <p-button label="Apagar conta" ngxTippy="Deletar Conta" (click)="apagarConta()"></p-button>
+  </div>
+</div>
