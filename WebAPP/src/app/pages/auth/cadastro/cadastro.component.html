@@ -21,11 +21,19 @@
             <small [ngClass]="{'invisible': !(f['email'].invalid && (f['email'].dirty || f['email'].touched)), 'p-error': true, 'pt-2': true, 'w-full': true, 'help': true}">E-mail informado não é valido.</small>
           </div>
 
-          <div class="flex flex-column">
-            <label for="password1" class="block text-900 font-medium text-xl mb-2">Senha</label>
-            <p-password id="password1" formControlName="senha" placeholder="Digite sua senha" [toggleMask]="true" styleClass="" inputStyleClass="w-full p-3 md:w-30rem"></p-password>
-            <small [ngClass]="{'invisible': !(f['senha'].invalid && (f['senha'].dirty || f['senha'].touched)), 'p-error': true, 'pt-2': true, 'w-full': true, 'help': true}">Senha incorreta, a senha precisa conter pelo menos 6 caracteres, uma letra maiuscula e um número</small>
-          </div>
+            <div class="flex flex-column mb-2">
+                <label for="cpf" class="block text-900 text-xl font-medium mb-2">CPF</label>
+                <input id="cpf" formControlName="cpf" type="text" placeholder="Digite seu CPF" mask="000.000.000-00" pInputText class="w-full md:w-30rem" style="padding:1rem">
+                <small [ngClass]="{'invisible': !(f['cpf'].invalid && (f['cpf'].dirty || f['cpf'].touched)), 'p-error': true, 'pt-2': true, 'w-full': true, 'help': true}">
+                    CPF informado não é válido.
+                </small>
+            </div>
+
+            <div class="flex flex-column">
+                <label for="password1" class="block text-900 font-medium text-xl mb-2">Senha</label>
+                <p-password id="password1" formControlName="senha" placeholder="Digite sua senha" [toggleMask]="true" styleClass="" inputStyleClass="w-full p-3 md:w-30rem"></p-password>
+                <small [ngClass]="{'invisible': !(f['senha'].invalid && (f['senha'].dirty || f['senha'].touched)), 'p-error': true, 'pt-2': true, 'w-full': true, 'help': true}">Senha incorreta, a senha precisa conter pelo menos 6 caracteres, uma letra maiuscula e um número</small>
+            </div>
 
           <div class="flex flex-column">
             <label for="confirmPassword1" class="block text-900 font-medium text-xl mb-2">Confirmar Senha</label>

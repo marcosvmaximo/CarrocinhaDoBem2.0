@@ -18,8 +18,8 @@ export class AuthService {
     return this.http.post<any>(`${apiUrl}/auth/login`, credentials);
   }
 
-  registrar(userName: string, email: string, password: string, confirmPassword: string): Observable<any> {
-    return this.http.post<any>(`${apiUrl}/auth/register`, {userName, email, password, confirmPassword, });
+  registrar(userName: string, email: string, cpf: string, password: string, confirmPassword: string): Observable<any> {
+    return this.http.post<any>(`${apiUrl}/auth/register`, {userName, email, cpf, password, confirmPassword, });
   }
 
   estaLogado(): boolean {
