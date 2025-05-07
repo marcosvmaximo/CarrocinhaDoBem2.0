@@ -25,6 +25,11 @@ public class User : ModelBase
     [EmailAddress(ErrorMessage = "O e-mail não está em um formato válido.")]
     [StringLength(100, ErrorMessage = "O e-mail não pode ter mais de 100 caracteres.")]
     public string Email { get; set; }
+    
+    [Required(ErrorMessage = "O CPF é obrigatório.")]
+    [RegularExpression(@"^\d{3}\.\d{3}\.\d{3}-\d{2}$", ErrorMessage = "O CPF deve estar no formato 000.000.000-00.")]
+    [StringLength(14, ErrorMessage = "O CPF deve ter 14 caracteres incluindo pontos e traço.")]
+    public string Cpf { get; set; }
     public string PasswordHash { get; set; }
 
     // [Required(ErrorMessage = "O telefone é obrigatório.")]
@@ -88,7 +93,12 @@ public class CreateUserRequest
     [EmailAddress(ErrorMessage = "O e-mail não está em um formato válido.")]
     [StringLength(100, ErrorMessage = "O e-mail não pode ter mais de 100 caracteres.")]
     public string Email { get; set; }
-
+    
+    [Required(ErrorMessage = "O CPF é obrigatório.")]
+    [RegularExpression(@"^\d{3}\.\d{3}\.\d{3}-\d{2}$", ErrorMessage = "O CPF deve estar no formato 000.000.000-00.")]
+    [StringLength(14, ErrorMessage = "O CPF deve ter 14 caracteres incluindo pontos e traço.")]
+    public string Cpf { get; set; }
+    
     [Required(ErrorMessage = "A senha é obrigatória.")]
     [StringLength(50, ErrorMessage = "A senha não pode ter mais de 50 caracteres.")]
     public string Password { get; set; }

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices.ComTypes;
+using System.Text.RegularExpressions;
 using CarrocinhaDoBem.Api.Context;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,9 +28,13 @@ public class AuthController : ControllerBase
     if (!ModelState.IsValid) return BadRequest("Usuário ou senha inválida.");
     if(request.Password != request.ConfirmPassword) return BadRequest("Senhas não coincidem.");
 
+    if (!IsCpfValid(request.Cpf))
+      return BadRequest("CPF inválido.");
+    
     var user = new User
     {
       Email = request.Email,
+      Cpf = request.Cpf,
       UserName = request.UserName,
       UserType = "costumer"
     };
@@ -39,6 +44,7 @@ public class AuthController : ControllerBase
       user = new User
       {
         Email = request.Email,
+        Cpf = request.Cpf,
         UserName = request.UserName,
         UserType = "admin"
       };
@@ -65,4 +71,34 @@ public class AuthController : ControllerBase
     user.PasswordHash = null;
     return isPasswordValid ? Ok(new {sucess = true, message = "Login realizado com sucesso.", data = user}) : BadRequest("Email ou senha inválidos.");
   }
+  private bool IsCpfValid(string cpf)
+  {
+    if (string.IsNullOrWhiteSpace(cpf))
+      return false;
+
+    cpf = cpf.Replace(".", "").Replace("-", "").Trim();
+
+    if (!Regex.IsMatch(cpf, @"^\d{11}$"))
+      return false;
+
+    if (new string(cpf[0], 11) == cpf)
+      return false;
+
+    var tempCpf = cpf.Substring(0, 9);
+    var firstDigit = CalculateDigit(tempCpf, new int[] { 10, 9, 8, 7, 6, 5, 4, 3, 2 });
+    var secondDigit = CalculateDigit(tempCpf + firstDigit, new int[] { 11, 10, 9, 8, 7, 6, 5, 4, 3, 2 });
+
+    return cpf.EndsWith(firstDigit.ToString() + secondDigit.ToString());
+  }
+
+  private int CalculateDigit(string cpf, int[] weight)
+  {
+    int sum = 0;
+    for (int i = 0; i < weight.Length; i++)
+      sum += int.Parse(cpf[i].ToString()) * weight[i];
+
+    int remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  }
+  
 }
