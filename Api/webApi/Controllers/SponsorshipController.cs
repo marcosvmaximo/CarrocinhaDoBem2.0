@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using webApi.Models;
 using CarrocinhaDoBem.Api.Context;
+using webApi.Context;
 
 namespace webApi.Controllers
 {

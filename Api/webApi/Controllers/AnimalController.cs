@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using webApi.Models;
 using CarrocinhaDoBem.Api.Context;
 using Microsoft.Extensions.Logging;
+using webApi.Context;
 using webApi.Models.Requests;
 using webApi.Models.Responses;
 

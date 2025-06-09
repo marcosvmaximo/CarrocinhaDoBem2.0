@@ -1,32 +1,50 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using webApi.Models.Base;
-using Microsoft.AspNetCore.Identity;
 
-namespace webApi.Models;
-
-public class Donation : ModelBase
+namespace webApi.Models // Namespace correto para modelos
 {
-    [Required(ErrorMessage = "O ID do usuário é obrigatório.")]
-    public int UserId { get; set; }
+    // O nome da classe deve ser a entidade que ela representa
+    public class Donation : ModelBase 
+    {
+        // Propriedades da sua doação
+        [Required]
+        public Guid? UserId { get; set; }
+        public virtual User User { get; set; }
 
-    [Required(ErrorMessage = "O ID da instituição é obrigatório.")]
-    public int InstitutionId { get; set; }
+        [Required]
+        public int InstitutionId { get; set; }
+        public virtual Institution Institution { get; set; }
 
-    [Required(ErrorMessage = "O valor da doação é obrigatório.")]
-    [Range(0, double.MaxValue, ErrorMessage = "O valor da doação deve ser um número positivo.")]
-    public double DonationValue { get; set; }
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DonationValue { get; set; }
 
-    [Required(ErrorMessage = "A data da doação é obrigatória.")]
-    [DataType(DataType.Date)]
-    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
-    public DateTime DonationDate { get; set; }
+        [Required]
+        [MaxLength(200)]
+        public string Description { get; set; }
 
-    [StringLength(200, ErrorMessage = "A descrição da doação não pode ter mais de 200 caracteres.")]
-    public string Description { get; set; }
+        [Required]
+        public DateTime DonationDate { get; set; }
 
-    // Relacionamento com a tabela Institution
-    public virtual Institution Institution { get; set; }
+        [MaxLength(50)]
+        public string? PaymentMethod { get; set; }
 
-    // Relacionamento com a tabela User
-    public virtual User User { get; set; }
+        [Required]
+        [MaxLength(50)]
+        public string Status { get; set; }
+
+        // Coleção de transações PIX associadas
+        public virtual ICollection<PixTransaction> PixTransactions { get; set; }
+
+        // O construtor é útil para inicializar valores padrão
+        public Donation()
+        {
+            DonationDate = DateTime.UtcNow;
+            Status = "Pending";
+            PixTransactions = new HashSet<PixTransaction>();
+        }
+    }
 }

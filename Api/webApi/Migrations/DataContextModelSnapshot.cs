@@ -4,6 +4,7 @@ using CarrocinhaDoBem.Api.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using webApi.Context;
 
 #nullable disable
 
@@ -236,6 +237,11 @@ namespace webApi.Migrations
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("DATE")
                         .HasColumnName("birthDate");
+
+                    b.Property<string>("Cpf")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("varchar(14)");
 
                     b.Property<string>("Email")
                         .IsRequired()

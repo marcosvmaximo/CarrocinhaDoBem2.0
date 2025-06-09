@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using webApi.Models;
 using CarrocinhaDoBem.Api.Context;
 using Microsoft.Extensions.Logging;
+using webApi.Context;
 
 
 namespace webApi.Controllers

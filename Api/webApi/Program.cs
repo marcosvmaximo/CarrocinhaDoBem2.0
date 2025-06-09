@@ -1,5 +1,6 @@
 using CarrocinhaDoBem.Api.Context;
 using Microsoft.EntityFrameworkCore;
+using webApi.Context;
 using webApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);

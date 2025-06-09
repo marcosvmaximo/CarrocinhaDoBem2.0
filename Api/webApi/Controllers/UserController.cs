@@ -6,6 +6,7 @@ using webApi.Models;
 using webApi.Services;
 using CarrocinhaDoBem.Api.Context;
 using Microsoft.Extensions.Logging;
+using webApi.Context;
 
 
 namespace webApi.Controllers
