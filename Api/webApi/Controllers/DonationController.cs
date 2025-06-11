@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using webApi.Models;
-using webApi.Context; // Namespace correto para DataContext
-// using webApi.Services; // Descomente quando IPixService e CreatePixChargeRequest estiverem definidos
+using webApi.Context; 
+using webApi.Services; 
 
 namespace webApi.Controllers
 {
@@ -15,27 +15,29 @@ namespace webApi.Controllers
     public class DonationController : ControllerBase
     {
         private readonly DataContext _context;
-        // private readonly IPixService _pixService; // Descomente quando IPixService estiver pronto
+        private readonly IPixService _pixService; // Serviço para lógica de negócio do PIX
 
-        public DonationController(DataContext context /*, IPixService pixService */)
+        public DonationController(DataContext context, IPixService pixService)
         {
             _context = context;
-            // _pixService = pixService; // Descomente quando IPixService estiver pronto
+            _pixService = pixService;
         }
 
         // GET: api/Donation
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Donation>>> GetDonations([FromQuery] Guid? userId) // UserId continua Guid?
+        public async Task<ActionResult<IEnumerable<Donation>>> GetDonations([FromQuery] int? userId)
         {
             var query = _context.Donations.AsQueryable();
 
             if (userId.HasValue)
             {
-                // Assumindo que Donation.UserId é Guid?
                 query = query.Where(d => d.UserId == userId.Value);
             }
 
-            var donations = await query.ToListAsync();
+            var donations = await query
+                                .Include(d => d.User)
+                                .Include(d => d.Institution)
+                                .ToListAsync();
 
             if (!donations.Any())
             {
@@ -45,12 +47,13 @@ namespace webApi.Controllers
             return Ok(donations);
         }
 
-        // GET: api/Donation/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Donation>> GetDonation(int id) // Alterado de volta para int
+        public async Task<ActionResult<Donation>> GetDonation(int id)
         {
-            // Assumindo que Donation.Id (ou ModelBase.Id) é int
-            var donation = await _context.Donations.FindAsync(id);
+            var donation = await _context.Donations
+                                .Include(d => d.User)
+                                .Include(d => d.Institution)
+                                .FirstOrDefaultAsync(d => d.Id == id);
 
             if (donation == null)
             {
@@ -60,84 +63,84 @@ namespace webApi.Controllers
             return donation;
         }
 
-        // POST: api/Donation
+        // POST: api/Donation (Para criar o registro da doação ANTES de gerar o PIX)
         [HttpPost]
-        public async Task<ActionResult<Donation>> PostDonation(Donation donation)
+        public async Task<ActionResult<Donation>> PostDonation([FromBody] Donation donationRequest)
         {
-            // Se o Id for int e gerado pelo banco (Identity), você geralmente não o define aqui.
-            // Se não for identity e for 0 (valor padrão para int), pode ser um indicativo de novo registro.
-            // A lógica de atribuição de Id pode variar dependendo da sua configuração de chave primária.
-            // Se o Id é identity, o EF Core cuida disso.
+            if (donationRequest.DonationValue <= 0)
+            {
+                ModelState.AddModelError("DonationValue", "O valor da doação deve ser maior que zero.");
+            }
 
-            donation.DonationDate = DateTime.UtcNow; // Garante que a data é definida no momento da criação
-
-            _context.Donations.Add(donation);
-            await _context.SaveChangesAsync();
-
-            // CreatedAtAction espera que o 'id' no objeto de rota corresponda ao tipo do parâmetro 'id' de GetDonation
-            return CreatedAtAction(nameof(GetDonation), new { id = donation.Id }, donation);
-        }
-
-        /*
-        // Endpoint para criar uma cobrança PIX para uma doação
-        // Descomente e ajuste quando IPixService e CreatePixChargeRequest estiverem prontos
-        // Lembre-se de que chargeRequest.DonationId precisará ser do tipo correto (int, neste caso)
-        [HttpPost("pix")]
-        public async Task<IActionResult> CreatePixDonation([FromBody] CreatePixChargeRequest chargeRequest) // chargeRequest.DonationId deve ser int
-        {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
+            
+            var newDonation = new Donation
+            {
+                DonationValue = donationRequest.DonationValue,
+                Description = donationRequest.Description,
+                InstitutionId = donationRequest.InstitutionId,
+                UserId = donationRequest.UserId, // Pode ser nulo para doadores anônimos
+                DonationDate = DateTime.UtcNow,
+                Status = "Pending" // Status inicial antes de tentar o pagamento
+            };
 
-            var donation = await _context.Donations.FindAsync(chargeRequest.DonationId); // DonationId aqui deve ser int
+            _context.Donations.Add(newDonation);
+            await _context.SaveChangesAsync();
+
+            // Retorna a doação criada, incluindo o ID gerado, para que o frontend possa usá-lo
+            return CreatedAtAction(nameof(GetDonation), new { id = newDonation.Id }, newDonation);
+        }
+
+        // POST: api/Donation/{id}/pix (Para gerar a cobrança PIX para uma doação existente)
+        [HttpPost("{id}/pix")]
+        public async Task<IActionResult> CreatePixForDonation(int id)
+        {
+            var donation = await _context.Donations.FindAsync(id);
             if (donation == null)
             {
                 return NotFound(new { message = "Doação não encontrada." });
             }
-            if (donation.Amount != chargeRequest.Amount)
+
+            if (donation.Status != "Pending")
             {
-                 return BadRequest(new { message = "O valor da requisição PIX não corresponde ao valor da doação." });
+                return BadRequest(new { message = "Esta doação não está pendente e não pode gerar uma nova cobrança PIX." });
             }
 
-            donation.Status = "PENDING_PIX_PAYMENT";
+            var chargeRequest = new CreatePixChargeRequest
+            {
+                DonationId = donation.Id,
+                Amount = donation.DonationValue
+            };
+
+            var pixResponse = await _pixService.CreatePixChargeAsync(chargeRequest);
+
+            if (!string.IsNullOrEmpty(pixResponse.ErrorMessage))
+            {
+                return StatusCode(500, new { message = "Erro ao gerar cobrança PIX.", details = pixResponse.ErrorMessage });
+            }
+            
+            // Atualiza o status da doação para indicar que a cobrança PIX foi gerada
+            donation.Status = "AwaitingPayment";
             donation.PaymentMethod = "PIX";
             _context.Entry(donation).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
 
-            // var pixResponse = await _pixService.CreatePixChargeAsync(chargeRequest);
-
-            // if (!string.IsNullOrEmpty(pixResponse.ErrorMessage))
-            // {
-            //     return StatusCode(500, new { message = "Erro ao gerar cobrança PIX.", details = pixResponse.ErrorMessage });
-            // }
-            
-            try
+            return Ok(new
             {
-                await _context.SaveChangesAsync();
-            }
-            catch(Exception ex)
-            {
-                // Logar o erro
-                return StatusCode(500, new { message = "Erro ao salvar dados da doação após gerar PIX.", details = ex.Message });
-            }
-
-            // return Ok(new
-            // {
-            //     message = "Cobrança PIX gerada com sucesso. Aguardando pagamento.",
-            //     donationId = donation.Id, // Este será int
-            //     pixTransactionId = pixResponse.TransactionId,
-            //     qrCode = pixResponse.QrCode,
-            //     copiaECola = pixResponse.CopiaECola,
-            //     expirationDate = pixResponse.ExpirationDate
-            // });
-
-            return Ok(new { message = "Endpoint PIX a ser implementado com _pixService" }); // Placeholder
+                message = "Cobrança PIX gerada com sucesso. Aguardando pagamento.",
+                donationId = donation.Id,
+                qrCode = pixResponse.QrCode,
+                copiaECola = pixResponse.CopiaECola,
+                expirationDate = pixResponse.ExpirationDate
+            });
         }
-        */
 
         // DELETE: api/Donation/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDonation(int id) // Alterado de volta para int
+        public async Task<IActionResult> DeleteDonation(int id)
         {
             var donation = await _context.Donations.FindAsync(id);
             if (donation == null)
@@ -151,9 +154,8 @@ namespace webApi.Controllers
             return NoContent();
         }
 
-        private bool DonationExists(int id) // Alterado de volta para int
+        private bool DonationExists(int id)
         {
-            // A comparação e => e.Id == id agora deve funcionar corretamente
             return _context.Donations.Any(e => e.Id == id);
         }
     }

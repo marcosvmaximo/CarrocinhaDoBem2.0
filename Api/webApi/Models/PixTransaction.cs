@@ -6,39 +6,36 @@ using System.ComponentModel.DataAnnotations;
 
 namespace webApi.Models
 {
-    public class PixTransaction : ModelBase // Ou herde de outra base se preferir
+    public class PixTransaction : ModelBase 
     {
         [Required]
-        public Guid DonationId { get; set; } // Chave estrangeira para a Doação relacionada
-        public virtual Donation Donation { get; set; } // Propriedade de navegação
+        public int DonationId { get; set; } 
+        public virtual Donation Donation { get; set; }
 
         [Required]
-        public string TransactionId { get; set; } // ID da transação gerado pelo provedor PIX (txid)
+        public string TransactionId { get; set; } 
 
-        public string? EndToEndId { get; set; } // E2E ID, preenchido após a confirmação
-
-        [Required]
-        public decimal Amount { get; set; } // Valor da transação
+        public string? EndToEndId { get; set; }
 
         [Required]
-        public DateTime CreationDate { get; set; } // Data de criação da cobrança PIX
-
-        public DateTime? ExpirationDate { get; set; } // Data de expiração da cobrança PIX
-
-        public DateTime? PaymentDate { get; set; } // Data de pagamento
+        public decimal Amount { get; set; }
 
         [Required]
-        public string Status { get; set; } // Status da transação (ex: PENDING, PAID, EXPIRED)
-        // Considere criar um Enum para Status: EPixStatus
+        public DateTime CreationDate { get; set; }
 
-        public string? QrCode { get; set; } // O QR Code em formato texto (string Base64 da imagem ou o payload)
+        public DateTime? ExpirationDate { get; set; }
 
-        public string? CopiaECola { get; set; } // O código "copia e cola" do PIX
+        public DateTime? PaymentDate { get; set; }
 
-        public string? PayerInfo { get; set; } // Informações do pagador (pode ser JSON ou campos específicos)
+        [Required]
+        public string Status { get; set; }
 
-        public string? ErrorMessage { get; set; } // Para registrar erros da transação, se houver
+        public string? QrCode { get; set; }
 
-        // Adicione outros campos que julgar necessários conforme a API PIX que for utilizar
+        public string? CopiaECola { get; set; }
+
+        public string? PayerInfo { get; set; }
+
+        public string? ErrorMessage { get; set; }
     }
 }

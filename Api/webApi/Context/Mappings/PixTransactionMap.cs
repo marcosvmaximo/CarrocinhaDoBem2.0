@@ -2,22 +2,29 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using webApi.Models;
 
-namespace CarrocinhaDoBem.Api.Context.Mappings
+namespace webApi.Context.Mappings
 {
     public class PixTransactionMap : IEntityTypeConfiguration<PixTransaction>
     {
         public void Configure(EntityTypeBuilder<PixTransaction> builder)
         {
-            builder.ToTable("PixTransactions"); // Nome da tabela no banco de dados
+            builder.ToTable("PixTransactions");
 
-            builder.HasKey(pt => pt.Id); // Chave primária (herdada de ModelBase ou definida aqui)
+            builder.HasKey(pt => pt.Id);
 
+            // Relacionamento com Donation (agora com tipos compatíveis: int -> int)
+            builder.HasOne(pt => pt.Donation)
+                .WithMany(d => d.PixTransactions)
+                .HasForeignKey(pt => pt.DonationId) // Esta propriedade agora é 'int'
+                .OnDelete(DeleteBehavior.Restrict); // Usar Restrict previne exclusão em cascata acidental
+
+            // --- Configuração das outras propriedades ---
             builder.Property(pt => pt.TransactionId)
                 .IsRequired()
-                .HasMaxLength(100); // Ajuste o tamanho conforme necessário
+                .HasMaxLength(100);
 
             builder.Property(pt => pt.EndToEndId)
-                .HasMaxLength(100); // Ajuste o tamanho conforme necessário
+                .HasMaxLength(100);
 
             builder.Property(pt => pt.Amount)
                 .IsRequired()
@@ -28,25 +35,13 @@ namespace CarrocinhaDoBem.Api.Context.Mappings
 
             builder.Property(pt => pt.Status)
                 .IsRequired()
-                .HasMaxLength(50); // Ajuste o tamanho
+                .HasMaxLength(50);
 
-            builder.Property(pt => pt.QrCode)
-                .HasColumnType("TEXT"); // Ou um tipo apropriado para strings longas
-
-            builder.Property(pt => pt.CopiaECola)
-                .HasColumnType("TEXT"); // Ou um tipo apropriado para strings longas
-
-            builder.Property(pt => pt.PayerInfo)
-                .HasColumnType("TEXT");
-
-            builder.Property(pt => pt.ErrorMessage)
-                .HasColumnType("TEXT");
-
-            // Relacionamento com Donation
-            builder.HasOne(pt => pt.Donation)
-                .WithMany(d => d.PixTransactions) // Adicionar esta propriedade de navegação em Donation.cs
-                .HasForeignKey(pt => pt.DonationId)
-                .OnDelete(DeleteBehavior.Restrict); // Ou Cascade, dependendo da sua regra de negócio
+            // Usar um tipo de dados que suporte textos longos
+            builder.Property(pt => pt.QrCode).HasColumnType("TEXT");
+            builder.Property(pt => pt.CopiaECola).HasColumnType("TEXT");
+            builder.Property(pt => pt.PayerInfo).HasColumnType("TEXT");
+            builder.Property(pt => pt.ErrorMessage).HasColumnType("TEXT");
         }
     }
 }

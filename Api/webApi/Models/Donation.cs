@@ -4,14 +4,12 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using webApi.Models.Base;
 
-namespace webApi.Models // Namespace correto para modelos
+namespace webApi.Models
 {
-    // O nome da classe deve ser a entidade que ela representa
     public class Donation : ModelBase 
     {
-        // Propriedades da sua doação
         [Required]
-        public Guid? UserId { get; set; }
+        public int? UserId { get; set; } // << CORRIGIDO de Guid? para int?
         public virtual User User { get; set; }
 
         [Required]
@@ -36,10 +34,8 @@ namespace webApi.Models // Namespace correto para modelos
         [MaxLength(50)]
         public string Status { get; set; }
 
-        // Coleção de transações PIX associadas
         public virtual ICollection<PixTransaction> PixTransactions { get; set; }
 
-        // O construtor é útil para inicializar valores padrão
         public Donation()
         {
             DonationDate = DateTime.UtcNow;

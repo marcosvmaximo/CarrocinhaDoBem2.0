@@ -7,7 +7,6 @@ namespace webApi.Context.Mappings
     // A classe de mapa implementa IEntityTypeConfiguration para a entidade que ela mapeia
     public class DonationMap : IEntityTypeConfiguration<Donation>
     {
-        // Todo o código de configuração vai dentro do método Configure
         public void Configure(EntityTypeBuilder<Donation> builder)
         {
             builder.ToTable("Donations"); // Nome da tabela no banco
