@@ -15,11 +15,13 @@ import {NotfoundComponent} from "./demo/components/notfound/notfound.component";
 import { NgxTippyModule } from 'ngx-tippy-wrapper';
 import {MessageService} from "primeng/api";
 import { ReactiveFormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
+import { DoacoesCadastroComponent } from './pages/doacoes-cadastro/doacoes-cadastro.component';
 
 
 @NgModule({
-  declarations: [AppComponent, NotfoundComponent],
-  imports: [AppRoutingModule, AppLayoutModule, ReactiveFormsModule , NgxTippyModule],
+  declarations: [AppComponent, NotfoundComponent, DoacoesCadastroComponent],
+  imports: [BrowserModule, AppRoutingModule, AppLayoutModule, ReactiveFormsModule , NgxTippyModule],
   providers: [
     { provide: LocationStrategy, useClass: PathLocationStrategy },
     CountryService, CustomerService, EventService, IconService, NodeService,
