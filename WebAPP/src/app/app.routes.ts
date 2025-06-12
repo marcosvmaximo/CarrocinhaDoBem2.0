@@ -26,6 +26,9 @@ import {AdocaoComponent} from "./pages/adocao/adocao.component";
 import {ApadrinhadosCadastroComponent} from "./pages/apadrinhados-cadastro/apadrinhados-cadastro.component";
 import {DoacoesAdminComponent} from "./pages/doacoes-admin/doacoes-admin.component";
 import {ApadrinhadosAdminComponent} from "./pages/apadrinhados-admin/apadrinhados-admin.component";
+import { DonationSuccessComponent } from './pages/donation-success/donation-success.component';
+import { DonationCancelComponent } from './pages/donation-cancel/donation-cancel.component';
+
 
 export const routes: Routes = [
   {path: '', redirectTo: 'inicio', pathMatch: 'full'},
@@ -36,7 +39,9 @@ export const routes: Routes = [
       {path: 'sobre', component: SobreComponent},
       {path: 'contato', component: ContatoComponent},
       {path: 'nossa-missao', component: NossaMissaoComponent},
-      {path: 'configuracao', component: ConfiguracaoComponent}
+      {path: 'configuracao', component: ConfiguracaoComponent},
+      {path: 'donation/success', component: DonationSuccessComponent},
+      {path: 'donation/cancel', component: DonationCancelComponent}
     ]
   },
   {
