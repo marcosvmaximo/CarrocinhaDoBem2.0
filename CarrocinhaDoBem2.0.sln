@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{D82C56D6-B2CD-F611-9E31-04638F7EC30E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakePSP.Api", "Api\FakePSP.Api\FakePSP.Api.csproj", "{D5CDB44F-14DF-3ABC-99A9-D8D4B4DEB60B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "webApi", "Api\webApi\webApi.csproj", "{181960B7-CE0D-32DC-00AD-47FF2A1EE15C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D5CDB44F-14DF-3ABC-99A9-D8D4B4DEB60B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5CDB44F-14DF-3ABC-99A9-D8D4B4DEB60B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5CDB44F-14DF-3ABC-99A9-D8D4B4DEB60B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5CDB44F-14DF-3ABC-99A9-D8D4B4DEB60B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{181960B7-CE0D-32DC-00AD-47FF2A1EE15C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{181960B7-CE0D-32DC-00AD-47FF2A1EE15C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{181960B7-CE0D-32DC-00AD-47FF2A1EE15C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{181960B7-CE0D-32DC-00AD-47FF2A1EE15C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D5CDB44F-14DF-3ABC-99A9-D8D4B4DEB60B} = {D82C56D6-B2CD-F611-9E31-04638F7EC30E}
+		{181960B7-CE0D-32DC-00AD-47FF2A1EE15C} = {D82C56D6-B2CD-F611-9E31-04638F7EC30E}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1F8EAC70-3E06-43F6-8E13-71637D4DB2B0}
+	EndGlobalSection
+EndGlobal
