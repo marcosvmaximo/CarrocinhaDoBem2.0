@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Concurrent;
-using System.Globalization;
 using System.Net.Http;
-using System.Net.Http.Json;
+using System.Net.Http.Json; // Adicionado para PostAsJsonAsync/JsonContent
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Globalization; // Adicionado para o Sanitize
 
 namespace FakePSP.Api.Controllers
 {
@@ -29,7 +29,11 @@ namespace FakePSP.Api.Controllers
         public string Status { get; set; } = "PENDING";
         public string SuccessUrl { get; set; }
         public string CancelUrl { get; set; }
-        public string WebhookUrl { get; set; } = "https://localhost:7001/api/payments/webhook";
+
+        // <<< CORREÇÃO AQUI >>>
+        // A URL agora aponta para o endpoint correto no DonationController da sua API principal.
+        public string WebhookUrl { get; set; } = "https://localhost:7001/api/donation/webhook";
+
         public string PixPayload { get; set; }
     }
 
@@ -49,8 +53,7 @@ namespace FakePSP.Api.Controllers
         private static readonly ConcurrentDictionary<string, Charge> _charges = new();
         private readonly IHttpClientFactory _httpClientFactory;
 
-        // --- INFORMAÇÕES DO BENEFICIÁRIO (ONG) ---
-        private const string PixKey = "a3325f4e-e2fe-42f3-9d63-c56ed2c0c1f2"; // Chave PIX real da ONG
+        private const string PixKey = "seu.email@dominio.com.br";
         private const string MerchantName = "ONG CARROCINHA DO BEM";
         private const string MerchantCity = "CURITIBA";
 
@@ -71,7 +74,6 @@ namespace FakePSP.Api.Controllers
                 CancelUrl = request.CancelUrl
             };
 
-            // Gera o payload do PIX e guarda-o na cobrança
             newCharge.PixPayload = GeneratePixPayload(newCharge.Amount);
 
             _charges[newCharge.ChargeId] = newCharge;
@@ -182,7 +184,6 @@ namespace FakePSP.Api.Controllers
         }
 
         #region Métodos Auxiliares para Geração do Payload PIX
-        // <<< CORREÇÃO: O txId agora é fixo para maior compatibilidade >>>
         private string GeneratePixPayload(decimal amount, string txId = "***")
         {
             var payload = new StringBuilder();
@@ -192,12 +193,11 @@ namespace FakePSP.Api.Controllers
             payload.Append(FormatField("53", "986"));
             payload.Append(FormatField("54", amount.ToString("F2", CultureInfo.InvariantCulture)));
             payload.Append(FormatField("58", "BR"));
-            // <<< CORREÇÃO: Sanitiza o nome e cidade para remover caracteres inválidos >>>
             payload.Append(FormatField("59", SanitizeText(MerchantName, 25)));
             payload.Append(FormatField("60", SanitizeText(MerchantCity, 15)));
             payload.Append(FormatField("62", FormatField("05", txId)));
 
-            payload.Append("6304"); // Início do campo CRC16
+            payload.Append("6304");
             string crc16 = CalculateCrc16(payload.ToString());
             payload.Append(crc16);
 
@@ -214,10 +214,8 @@ namespace FakePSP.Api.Controllers
             return $"{id}{value.Length:D2}{value}";
         }
 
-        // <<< NOVO: Função para limpar e normalizar os textos >>>
         private string SanitizeText(string text, int maxLength)
         {
-            // Remove acentos e caracteres especiais
             var normalizedString = text.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
             foreach (var c in normalizedString)
@@ -230,7 +228,6 @@ namespace FakePSP.Api.Controllers
             }
             var sanitized = stringBuilder.ToString().Normalize(NormalizationForm.FormC).ToUpper();
 
-            // Limita ao tamanho máximo permitido pelo padrão PIX
             return sanitized.Length > maxLength ? sanitized.Substring(0, maxLength) : sanitized;
         }
 
@@ -238,7 +235,7 @@ namespace FakePSP.Api.Controllers
         {
             ushort crc = 0xFFFF;
             ushort polynomial = 0x1021;
-            foreach (byte b in Encoding.ASCII.GetBytes(data)) // Usar ASCII para o cálculo do CRC
+            foreach (byte b in Encoding.ASCII.GetBytes(data))
             {
                 crc ^= (ushort)(b << 8);
                 for (int i = 0; i < 8; i++)

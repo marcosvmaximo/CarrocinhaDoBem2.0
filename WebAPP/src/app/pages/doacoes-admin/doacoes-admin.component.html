@@ -1,21 +1,68 @@
-<div class="card">
-  <h5>Suas Doações</h5>
-  <p-table [value]="doacoes" [paginator]="true" [rows]="5" responsiveLayout="scroll">
-    <ng-template pTemplate="header">
-      <tr>
-        <th>Código</th>
-        <th pSortableColumn="description">Descrição</th>
-        <th pSortableColumn="donationDate">Data Realização <p-sortIcon field="dataRealizacao"></p-sortIcon></th>
-        <th pSortableColumn="donationValue">Valor <p-sortIcon field="valor"></p-sortIcon></th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-doacao>
-      <tr>
-        <td>{{ doacao.id }}</td>
-        <td>{{ doacao.description }}</td>
-        <td>{{ formatDate(doacao.donationDate) }}</td>
-        <td>{{ formatCurrency(doacao.donationValue) }}</td>
-      </tr>
-    </ng-template>
-  </p-table>
+<div class="grid">
+    <!-- Card de Total Arrecadado -->
+    <div class="col-12 lg:col-6 xl:col-4">
+        <div class="card mb-0">
+            <div class="flex justify-content-between mb-3">
+                <div>
+                    <span class="block text-500 font-medium mb-3">Total Arrecadado (Pago)</span>
+                    <div class="text-900 font-medium text-xl">{{ summary?.totalValuePaid | currency:'BRL' }}</div>
+                </div>
+                <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width:2.5rem;height:2.5rem">
+                    <i class="pi pi-dollar text-green-500 text-xl"></i>
+                </div>
+            </div>
+            <span class="text-green-500 font-medium">{{ summary?.totalDonations }} doações no total</span>
+        </div>
+    </div>
+
+    <!-- Card de Status de Doações (Gráfico) -->
+    <div class="col-12 lg:col-6 xl:col-8">
+        <div class="card flex flex-column align-items-center">
+            <h5 class="text-left w-full">Doações por Status</h5>
+            <p-chart type="pie" [data]="pieChartData" [options]="pieChartOptions" style="width: 100%; max-width: 400px;"></p-chart>
+        </div>
+    </div>
+
+    <!-- Tabela de Doações -->
+    <div class="col-12">
+        <div class="card">
+            <h5>Histórico de Doações</h5>
+            <p-table #dt [value]="donations" [paginator]="true" [rows]="10" [loading]="isLoading" [globalFilterFields]="['user.userName', 'donationValue', 'status']" responsiveLayout="scroll">
+                <ng-template pTemplate="caption">
+                    <div class="flex justify-content-between">
+                        <button pButton label="Recarregar" icon="pi pi-refresh" class="p-button-sm" (click)="loadAllData()"></button>
+                        <span class="p-input-icon-left ml-auto">
+                            <i class="pi pi-search"></i>
+                            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Pesquisar..." />
+                        </span>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="donationDate">Data <p-sortIcon field="donationDate"></p-sortIcon></th>
+                        <th pSortableColumn="user.userName">Doador <p-sortIcon field="user.userName"></p-sortIcon></th>
+                        <th pSortableColumn="donationValue">Valor <p-sortIcon field="donationValue"></p-sortIcon></th>
+                        <th pSortableColumn="status">Status <p-sortIcon field="status"></p-sortIcon></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-donation>
+                    <tr>
+                        <td>{{ donation.donationDate | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ donation.user?.userName || 'Anônimo' }}</td>
+                        <td>{{ donation.donationValue | currency:'BRL' }}</td>
+                        <td>
+                            <p-tag [value]="donation.status" [severity]="getStatusSeverity(donation.status)"></p-tag>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="4" class="text-center">Nenhuma doação encontrada.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
 </div>
+
+<p-toast></p-toast>

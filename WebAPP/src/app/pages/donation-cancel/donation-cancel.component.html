@@ -14,9 +14,10 @@
                     <h1 class="text-900 font-bold text-4xl lg:text-5xl mb-2">Pagamento Cancelado</h1>
                     <span class="text-gray-600 mb-5">A sua doação foi cancelada.<br/>Você pode tentar novamente quando quiser.</span>
 
-                    <!-- Botão para Voltar -->
+                    <!-- <<< CORREÇÃO AQUI >>> -->
+                    <!-- O link agora aponta para a rota de doação dentro do dashboard protegido. -->
                     <div class="col-12 mt-5 text-center">
-                        <a routerLink="/doacoes/cadastro" pButton label="Tentar Novamente" icon="pi pi-replay" class="p-button-secondary"></a>
+                        <a routerLink="/dashboard/doacoes-cadastro" pButton label="Tentar Novamente" icon="pi pi-replay" class="p-button-secondary"></a>
                     </div>
                 </div>
             </div>

@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims; // Importação necessária para ler o token
+using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization; // Importação necessária para o [Authorize]
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using webApi.Context;
 using webApi.Models;
 using webApi.Models.Requests;
@@ -12,44 +14,48 @@ using webApi.Services;
 
 namespace webApi.Controllers
 {
+    // O DTO para o webhook pode ser definido aqui ou em um arquivo separado
+    public class PaymentWebhookPayload
+    {
+        public string EventType { get; set; }
+        public int DonationId { get; set; }
+        public string ChargeId { get; set; }
+        public decimal AmountPaid { get; set; }
+    }
+
     [Route("api/[controller]")]
     [ApiController]
     public class DonationController : ControllerBase
     {
         private readonly DataContext _context;
         private readonly IPaymentService _paymentService;
+        private readonly ILogger<DonationController> _logger;
 
-        public DonationController(DataContext context, IPaymentService paymentService)
+        public DonationController(DataContext context, IPaymentService paymentService, ILogger<DonationController> logger)
         {
             _context = context;
             _paymentService = paymentService;
+            _logger = logger;
         }
 
-        [Authorize] // Protege o endpoint. Apenas usuários logados podem acessá-lo.
+        // --- ENDPOINTS PARA UTILIZADORES LOGADOS ---
+
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<Donation>> CreateDonation([FromBody] DonationRequestDto donationDto)
         {
-            // Extrai o ID do usuário do token (claim "NameIdentifier")
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdString))
-            {
-                return Unauthorized("Token de usuário inválido ou não encontrado.");
-            }
-
             if (!int.TryParse(userIdString, out var userId))
             {
-                return BadRequest("O ID do usuário no token não é um número válido.");
+                return Unauthorized("Token de utilizador inválido.");
             }
 
-            // <<< CORREÇÃO AQUI >>>
-            // Mapeia o DTO para a entidade, usando o ID do usuário obtido do token,
-            // em vez de tentar pegar de donationDto.UserId.
             var newDonation = new Donation
             {
                 DonationValue = donationDto.DonationValue,
                 Description = donationDto.Description,
                 InstitutionId = donationDto.InstitutionId,
-                UserId = userId, // ID obtido do token
+                UserId = userId,
                 DonationDate = DateTime.UtcNow,
                 Status = "Pending"
             };
@@ -60,17 +66,13 @@ namespace webApi.Controllers
             return CreatedAtAction(nameof(GetDonation), new { id = newDonation.Id }, newDonation);
         }
 
-        [Authorize] // Também é uma boa prática proteger este endpoint
         [HttpPost("{id}/checkout")]
+        [Authorize]
         public async Task<IActionResult> CreateCheckoutSession(int id)
         {
             var donation = await _context.Donations.FindAsync(id);
-            if (donation == null)
-            {
-                return NotFound("Doação não encontrada.");
-            }
+            if (donation == null) return NotFound("Doação não encontrada.");
 
-            // Validação de segurança: garante que o usuário logado é o "dono" da doação
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (donation.UserId.ToString() != userIdString)
             {
@@ -100,9 +102,54 @@ namespace webApi.Controllers
             return Ok(new { checkoutUrl = pspResponse.CheckoutUrl });
         }
 
-        #region Endpoints de Leitura e Exclusão
+        // --- ENDPOINT PARA O WEBHOOK DO PSP ---
+
+        [HttpPost("webhook")]
+        public async Task<IActionResult> HandleWebhook([FromBody] PaymentWebhookPayload payload)
+        {
+            _logger.LogInformation("--> Webhook recebido para a doação ID: {DonationId}", payload.DonationId);
+            if (payload.EventType == "payment.succeeded")
+            {
+                var donation = await _context.Donations.FindAsync(payload.DonationId);
+                if (donation != null)
+                {
+                    donation.Status = "Paid";
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("--> Doação ID {DonationId} atualizada para 'Paid'.", payload.DonationId);
+                    return Ok(new { message = "Webhook processado com sucesso." });
+                }
+                _logger.LogError("--> Doação com ID {DonationId} não encontrada.", payload.DonationId);
+                return NotFound();
+            }
+            return BadRequest();
+        }
+
+        // --- ENDPOINTS PARA ADMINS ---
+
+        [HttpGet("admin/all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<Donation>>> GetAllDonations()
+        {
+             var donations = await _context.Donations.Include(d => d.User).Include(d => d.Institution).OrderByDescending(d => d.DonationDate).ToListAsync();
+             if (!donations.Any()) return NotFound("Nenhuma doação encontrada.");
+             return Ok(donations);
+        }
+
+        [HttpGet("admin/summary")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> GetDonationSummary()
+        {
+             var totalValuePaid = await _context.Donations.Where(d => d.Status == "Paid").SumAsync(d => d.DonationValue);
+             var totalDonations = await _context.Donations.CountAsync();
+             var donationsByStatus = await _context.Donations.GroupBy(d => d.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync();
+             var summary = new { TotalDonations = totalDonations, TotalValuePaid = totalValuePaid, DonationsByStatus = donationsByStatus };
+             return Ok(summary);
+        }
+
+        // --- ENDPOINTS PÚBLICOS OU DE LEITURA GERAL ---
+
         [HttpGet]
-        public async Task<ActionResult<System.Collections.Generic.IEnumerable<Donation>>> GetDonations([FromQuery] int? userId)
+        public async Task<ActionResult<IEnumerable<Donation>>> GetDonations([FromQuery] int? userId)
         {
              var query = _context.Donations.AsQueryable();
              if (userId.HasValue)
@@ -123,6 +170,7 @@ namespace webApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize] // Apenas utilizadores logados podem apagar as suas próprias doações (lógica a ser adicionada)
         public async Task<IActionResult> DeleteDonation(int id)
         {
              var donation = await _context.Donations.FindAsync(id);
@@ -131,6 +179,5 @@ namespace webApi.Controllers
              await _context.SaveChangesAsync();
              return NoContent();
         }
-        #endregion
     }
 }
