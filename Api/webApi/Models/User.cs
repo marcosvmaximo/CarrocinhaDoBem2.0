@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using webApi.Models.Base;
 using Microsoft.AspNetCore.Identity;
+using System;
 
 namespace webApi.Models;
 
@@ -30,7 +31,10 @@ public class User : ModelBase
     [RegularExpression(@"^\d{3}\.\d{3}\.\d{3}-\d{2}$", ErrorMessage = "O CPF deve estar no formato 000.000.000-00.")]
     [StringLength(14, ErrorMessage = "O CPF deve ter 14 caracteres incluindo pontos e traço.")]
     public string Cpf { get; set; }
-    public string PasswordHash { get; set; }
+
+
+    public byte[] PasswordHash { get; set; }
+    public byte[] PasswordSalt { get; set; }
 
     // [Required(ErrorMessage = "O telefone é obrigatório.")]
     [Phone(ErrorMessage = "O telefone não está em um formato válido.")]

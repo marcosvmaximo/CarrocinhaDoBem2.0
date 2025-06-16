@@ -1,31 +1,27 @@
-using Microsoft.AspNetCore.Identity;
-using webApi.Models;
-
-namespace webApi.Services;
-
-public class PasswordService : IPasswordService
+// Local: Api/webApi/Services/PasswordService.cs
+namespace webApi.Services
 {
-  private readonly PasswordHasher<User> _passwordHasher;
+    // Adicione ": IPasswordService" aqui
+    public class PasswordService : IPasswordService
+    {
+        // O corpo da classe, com os métodos CreatePasswordHash e VerifyPasswordHash,
+        // permanece exatamente o mesmo.
+        public void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
+        {
+            using (var hmac = new System.Security.Cryptography.HMACSHA512())
+            {
+                passwordSalt = hmac.Key;
+                passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            }
+        }
 
-  public PasswordService()
-  {
-    _passwordHasher = new PasswordHasher<User>();
-  }
-
-  public string HashPassword(User user, string password)
-  {
-    return _passwordHasher.HashPassword(user, password);
-  }
-
-  public bool VerifyPassword(User user, string password)
-  {
-    var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-    return result == PasswordVerificationResult.Success;
-  }
-}
-
-public interface IPasswordService
-{
-  string HashPassword(User user, string password);
-  bool VerifyPassword(User user, string password);
+        public bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
+        {
+            using (var hmac = new System.Security.Cryptography.HMACSHA512(passwordSalt))
+            {
+                var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+                return computedHash.SequenceEqual(passwordHash);
+            }
+        }
+    }
 }

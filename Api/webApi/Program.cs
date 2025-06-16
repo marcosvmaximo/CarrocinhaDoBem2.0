@@ -1,70 +1,81 @@
-using CarrocinhaDoBem.Api.Context;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using webApi.Context;
 using webApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// --- Definição da Política de CORS ---
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy =>
+                      {
+                          policy.WithOrigins(
+                              "http://localhost:4200",
+                              "https://localhost:4200",
+                              "http://localhost:5001",
+                              "https://localhost:7001"
+                              )
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                      });
+});
 
+// --- Adicionar serviços ao contêiner ---
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddAuthorization();
-builder.Services.AddHttpClient<IPaymentService, PaymentService>();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAnyOrigin", builder =>
-    {
-        builder.AllowAnyOrigin();
-        builder.AllowAnyHeader();
-        builder.AllowAnyMethod();
-    });
-});
-
-string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException("builder.Configuration.GetConnectionString(\"DefaultConnection\")");
 builder.Services.AddDbContext<DataContext>(options =>
-{
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-});
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// --- CORREÇÃO AQUI: Configurando o HttpClient para ignorar erros de SSL em desenvolvimento ---
+builder.Services.AddHttpClient<IPaymentService, PaymentService>()
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        // Esta configuração permite que a API principal se comunique com a FakePSP Api
+        // em HTTPS localmente, ignorando o erro de certificado autoassinado.
+        return new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        };
+    });
 
-builder.Services.AddScoped<DataContext>();
-builder.Services.AddTransient<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddAutoMapper(typeof(Program));
+
+// Configuração da Autenticação JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
+                .GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- Configuração do pipeline de requisições HTTP ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseCors(MyAllowSpecificOrigins);
 app.UseHttpsRedirection();
-app.UseCors("AllowAnyOrigin");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
-
-// Middleware global para tratamento de erros
-app.Use(async (context, next) =>
-{
-    try
-    {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-        var response = new { message = ex.Message };
-        await context.Response.WriteAsJsonAsync(response);
-    }
-});

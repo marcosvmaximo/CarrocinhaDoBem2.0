@@ -8,7 +8,6 @@ export interface DonationRequest {
   donationValue: number;
   description: string;
   institutionId: number;
-  userId?: number | null;
 }
 
 // Interface para a resposta da criação da doação (continua a mesma)

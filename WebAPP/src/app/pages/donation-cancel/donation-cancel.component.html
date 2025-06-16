@@ -1,1 +1,25 @@
-<p>donation-cancel works!</p>
+<div class="surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
+    <div class="flex flex-column align-items-center justify-content-center">
+        <!-- Efeito de gradiente no fundo do card -->
+        <div style="border-radius:56px; padding:0.3rem; background: linear-gradient(180deg, var(--orange-400) 10%, rgba(255, 255, 255, 0) 30%);">
+            <div class="w-full surface-card py-8 px-5 sm:px-8 flex flex-column align-items-center" style="border-radius:53px">
+                <div class="grid flex flex-column align-items-center text-center">
+
+                    <!-- Ícone de Aviso/Cancelamento -->
+                    <div class="flex justify-content-center align-items-center bg-orange-500 border-circle mb-3" style="width:3.2rem; height:3.2rem;">
+                        <i class="pi pi-exclamation-triangle text-2xl text-white"></i>
+                    </div>
+
+                    <!-- Mensagens de Feedback -->
+                    <h1 class="text-900 font-bold text-4xl lg:text-5xl mb-2">Pagamento Cancelado</h1>
+                    <span class="text-gray-600 mb-5">A sua doação foi cancelada.<br/>Você pode tentar novamente quando quiser.</span>
+
+                    <!-- Botão para Voltar -->
+                    <div class="col-12 mt-5 text-center">
+                        <a routerLink="/doacoes/cadastro" pButton label="Tentar Novamente" icon="pi pi-replay" class="p-button-secondary"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

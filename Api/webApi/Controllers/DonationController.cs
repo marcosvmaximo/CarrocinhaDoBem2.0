@@ -1,11 +1,14 @@
 using System;
 using System.Linq;
+using System.Security.Claims; // Importação necessária para ler o token
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization; // Importação necessária para o [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using webApi.Context;
 using webApi.Models;
-using webApi.Services; // Usando o novo serviço
+using webApi.Models.Requests;
+using webApi.Services;
 
 namespace webApi.Controllers
 {
@@ -22,21 +25,31 @@ namespace webApi.Controllers
             _paymentService = paymentService;
         }
 
-        // POST: api/donations
+        [Authorize] // Protege o endpoint. Apenas usuários logados podem acessá-lo.
         [HttpPost]
-        public async Task<ActionResult<Donation>> CreateDonation([FromBody] Donation donationRequest)
+        public async Task<ActionResult<Donation>> CreateDonation([FromBody] DonationRequestDto donationDto)
         {
-            if (donationRequest.DonationValue <= 0)
+            // Extrai o ID do usuário do token (claim "NameIdentifier")
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString))
             {
-                return BadRequest("O valor da doação deve ser maior que zero.");
+                return Unauthorized("Token de usuário inválido ou não encontrado.");
             }
 
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return BadRequest("O ID do usuário no token não é um número válido.");
+            }
+
+            // <<< CORREÇÃO AQUI >>>
+            // Mapeia o DTO para a entidade, usando o ID do usuário obtido do token,
+            // em vez de tentar pegar de donationDto.UserId.
             var newDonation = new Donation
             {
-                DonationValue = donationRequest.DonationValue,
-                Description = donationRequest.Description,
-                InstitutionId = donationRequest.InstitutionId,
-                UserId = donationRequest.UserId,
+                DonationValue = donationDto.DonationValue,
+                Description = donationDto.Description,
+                InstitutionId = donationDto.InstitutionId,
+                UserId = userId, // ID obtido do token
                 DonationDate = DateTime.UtcNow,
                 Status = "Pending"
             };
@@ -46,8 +59,8 @@ namespace webApi.Controllers
 
             return CreatedAtAction(nameof(GetDonation), new { id = newDonation.Id }, newDonation);
         }
-        
-        // NOVO ENDPOINT para iniciar o pagamento
+
+        [Authorize] // Também é uma boa prática proteger este endpoint
         [HttpPost("{id}/checkout")]
         public async Task<IActionResult> CreateCheckoutSession(int id)
         {
@@ -57,15 +70,20 @@ namespace webApi.Controllers
                 return NotFound("Doação não encontrada.");
             }
 
-            // Monta o pedido para o nosso FakePSP
+            // Validação de segurança: garante que o usuário logado é o "dono" da doação
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (donation.UserId.ToString() != userIdString)
+            {
+                return Forbid("Você não tem permissão para pagar esta doação.");
+            }
+
             var chargeRequest = new CreateChargeRequest
             {
                 DonationId = donation.Id,
                 Amount = donation.DonationValue,
-                Description = $"Doação para {donation.Description}",
-                // URLs para onde o PSP deve redirecionar o usuário após o pagamento
-                SuccessUrl = "http://localhost:4200/donation/success", // Rota no seu Angular
-                CancelUrl = "http://localhost:4200/donation/cancel"    // Rota no seu Angular
+                Description = $"Doação: {donation.Description}",
+                SuccessUrl = "http://localhost:4200/donation/success",
+                CancelUrl = "http://localhost:4200/donation/cancel"
             };
 
             var pspResponse = await _paymentService.CreateChargeAsync(chargeRequest);
@@ -75,19 +93,14 @@ namespace webApi.Controllers
                 return StatusCode(500, new { message = "Erro ao iniciar sessão de pagamento.", details = pspResponse.ErrorMessage });
             }
 
-            // Atualiza o status da doação para indicar que o pagamento foi iniciado
             donation.Status = "ProcessingPayment";
             donation.PaymentMethod = "PSP_FAKE";
-            // Você pode querer salvar o pspResponse.ChargeId na sua entidade de transação aqui
             await _context.SaveChangesAsync();
 
-            // Retorna o objeto com a URL de checkout para o frontend
             return Ok(new { checkoutUrl = pspResponse.CheckoutUrl });
         }
 
-        // O endpoint de webhook ficará em um controller separado (`PaymentsController`).
-
-        #region Endpoints de Leitura e Exclusão (sem alterações)
+        #region Endpoints de Leitura e Exclusão
         [HttpGet]
         public async Task<ActionResult<System.Collections.Generic.IEnumerable<Donation>>> GetDonations([FromQuery] int? userId)
         {
@@ -113,7 +126,7 @@ namespace webApi.Controllers
         public async Task<IActionResult> DeleteDonation(int id)
         {
              var donation = await _context.Donations.FindAsync(id);
-             if (donation == null) return NotFound("Doação nao encontrada");
+             if (donation == null) return NotFound("Doação não encontrada");
              _context.Donations.Remove(donation);
              await _context.SaveChangesAsync();
              return NoContent();

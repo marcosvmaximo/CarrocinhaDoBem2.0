@@ -30,7 +30,8 @@ import {MessageService} from "primeng/api";
     ToastModule
   ],
   templateUrl: './cadastro.component.html',
-  styleUrls: ['./cadastro.component.scss']
+  styleUrls: ['./cadastro.component.scss'],
+  providers: [MessageService]
 })
 export class CadastroComponent{
   password!: string;

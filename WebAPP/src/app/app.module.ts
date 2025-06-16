@@ -1,32 +1,59 @@
 import { NgModule } from '@angular/core';
-import {CommonModule, LocationStrategy, PathLocationStrategy} from '@angular/common';
-import {AppLayoutModule} from "./layout/app.layout.module";
-import {AppComponent} from "./app.component";
-import {AppRoutingModule} from "./app.routes";
-import {RouterModule} from "@angular/router";
-import {ProductService} from "./demo/service/product.service";
-import {PhotoService} from "./demo/service/photo.service";
-import {CountryService} from "./demo/service/country.service";
-import {CustomerService} from "./demo/service/customer.service";
-import {EventService} from "./demo/service/event.service";
-import {IconService} from "./demo/service/icon.service";
-import {NodeService} from "./demo/service/node.service";
-import {NotfoundComponent} from "./demo/components/notfound/notfound.component";
-import { NgxTippyModule } from 'ngx-tippy-wrapper';
-import {MessageService} from "primeng/api";
-import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
-import { DoacoesCadastroComponent } from './pages/doacoes-cadastro/doacoes-cadastro.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http'; // Importa HTTP_INTERCEPTORS
+import { RouterModule } from '@angular/router';
 
+// --- Módulos do PrimeNG ---
+import { ToastModule } from 'primeng/toast';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { ButtonModule } from 'primeng/button';
+
+// --- Módulos e Componentes do seu Projeto ---
+import { routes } from './app.routes';
+import { AppComponent } from './app.component';
+import { AppLayoutModule } from './layout/app.layout.module';
+import { AuthInterceptor } from './commons/interceptors/auth.interceptor'; // Importa o novo interceptor
+
+// --- Componentes Standalone ---
+import { DoacoesCadastroComponent } from './pages/doacoes-cadastro/doacoes-cadastro.component';
+import { DonationSuccessComponent } from './pages/donation-success/donation-success.component';
+import { DonationCancelComponent } from './pages/donation-cancel/donation-cancel.component';
+import { NotfoundComponent } from './demo/components/notfound/notfound.component';
+import { LoginComponent } from './pages/auth/login/login.component';
+import { CadastroComponent } from './pages/auth/cadastro/cadastro.component'; // Importe o CadastroComponent
 
 @NgModule({
-  declarations: [AppComponent, NotfoundComponent, DoacoesCadastroComponent],
-  imports: [BrowserModule, AppRoutingModule, AppLayoutModule, ReactiveFormsModule , NgxTippyModule],
-  providers: [
-    { provide: LocationStrategy, useClass: PathLocationStrategy },
-    CountryService, CustomerService, EventService, IconService, NodeService,
-    PhotoService, ProductService, MessageService
+  declarations: [
+    AppComponent,
+    DoacoesCadastroComponent,
+    NotfoundComponent
+    // O array de declarações fica mais vazio, pois a maioria dos componentes é standalone.
   ],
-  bootstrap: [AppComponent],
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
+    FormsModule,
+    ReactiveFormsModule,
+
+    HttpClientModule,
+    AppLayoutModule,
+    RouterModule.forRoot(routes),
+    ToastModule,
+    InputNumberModule,
+    ButtonModule,
+
+    // Componentes Standalone são importados aqui, como se fossem módulos
+    DonationSuccessComponent,
+    DonationCancelComponent,
+    LoginComponent,
+    CadastroComponent
+  ],
+  providers: [
+    // Registra o AuthInterceptor para ser usado em todas as requisições HTTP
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+  ],
+  bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -9,7 +9,7 @@ namespace webApi.Models
     public class Donation : ModelBase 
     {
         [Required]
-        public int? UserId { get; set; } // << CORRIGIDO de Guid? para int?
+        public int UserId { get; set; }
         public virtual User User { get; set; }
 
         [Required]

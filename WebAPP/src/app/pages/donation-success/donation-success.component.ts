@@ -1,12 +1,18 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-donation-success',
   standalone: true,
-  imports: [],
+  imports: [
+    RouterLink,
+    ButtonModule
+  ],
   templateUrl: './donation-success.component.html',
-  styleUrl: './donation-success.component.scss'
+  styleUrls: ['./donation-success.component.scss']
 })
 export class DonationSuccessComponent {
-
+  // Este componente não precisa de lógica complexa,
+  // apenas exibe a mensagem de sucesso.
 }

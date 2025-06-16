@@ -13,8 +13,11 @@ namespace webApi.Context.Mappings
             
             builder.HasKey(x => x.Id); // Chave primária (assumindo que vem de ModelBase)
 
-            builder.Property(d => d.UserId)
-                .HasColumnName("UserID");
+            builder.HasOne(d => d.User)
+                .WithMany() // Se a entidade User tiver uma coleção de Donations, adicione aqui. Ex: .WithMany(u => u.Donations)
+                .HasForeignKey(d => d.UserId)
+                .IsRequired() // Garante que a chave estrangeira não pode ser nula
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(d => d.InstitutionId)
                 .HasColumnName("InstitutionID")

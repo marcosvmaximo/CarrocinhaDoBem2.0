@@ -35,7 +35,6 @@ export class DoacoesCadastroComponent {
       donationValue: this.donationForm.value.donationValue,
       description: 'Doação para cuidados gerais',
       institutionId: 1, // Fixo para a instituição principal
-      userId: null // TODO: Obter ID do usuário logado, se houver
     };
 
     // ETAPA 1: Criar o registro da doação

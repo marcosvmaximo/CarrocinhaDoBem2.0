@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -31,12 +31,14 @@ import {ToastModule} from "primeng/toast";
     FormsModule,
     Ripple,
     MessageModule,
-    NgIf,
     NgClass,
     ToastModule
   ],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  styleUrl: './login.component.scss',
+  // <<< CORREÇÃO AQUI >>>
+  // Adiciona o MessageService à lista de providers do componente.
+  providers: [MessageService]
 })
 export class LoginComponent{
   senha!: string;
@@ -46,10 +48,11 @@ export class LoginComponent{
     email: "E-mail",
     senha: "Senha"
   };
+
+  // O seu construtor e o resto da classe permanecem os mesmos
   constructor(private fb: FormBuilder, private service: AuthService, private msgService: MessageService, private router: Router) {
     this.form = fb.group({
       email: ['', [Validators.required, Validators.email]],
-      // senha: ['', [Validators.required, this.passwordValidator]],
       senha: ['', [Validators.required]]
     });
   }
@@ -64,72 +67,79 @@ export class LoginComponent{
 
     const email = this.f['email'].value;
     const senha = this.f['senha'].value;
+
+    // Este método foi corrigido anteriormente para salvar o token e o usuário
     this.service.login({email: email, password: senha})
-      .subscribe((response)=> {
-        this.msgService.add({ key: 'tst', severity: 'success', summary: 'Successo', detail: 'Login realizado com sucesso' });
+        .subscribe({
+          next: (response) => {
+            // <<< CORREÇÃO PRINCIPAL AQUI >>>
+            // Verifica apenas a existência do token na resposta.
+            if (response && response.token) {
+              this.msgService.add({ key: 'tst', severity: 'success', summary: 'Sucesso', detail: 'Login realizado com sucesso!' });
 
-        localStorage.setItem("logado", "true");
-        localStorage.setItem("user", JSON.stringify(response.data));
+              // 1. Salva o token JWT no localStorage
+              localStorage.setItem("token", response.token);
 
-        if(email === 'admin@gmail.com' && senha === 'Admin123'){
-          localStorage.setItem("admin", "true");
-        }
+              // 2. Descodifica o token para extrair as informações do usuário
+              try {
+                const payload = JSON.parse(atob(response.token.split('.')[1]));
+                const user = {
+                  id: payload.nameid,
+                  userName: payload.unique_name,
+                  email: payload.email,
+                  userType: payload.role
+                };
 
-        setTimeout(() => {
-          this.router.navigate(['/inicio']);
-        }, 1000);
-      }, err => {
-        this.msgService.add({ key: 'tst', severity: 'error', summary: 'Mensagem de Erro', detail: 'Email ou senha inválidos.' });
-      });
+                // 3. Salva os dados do usuário e o status de login/admin
+                localStorage.setItem("user", JSON.stringify(user));
+                localStorage.setItem("logado", "true");
+                localStorage.setItem("admin", user.userType === 'Admin' ? 'true' : 'false');
+
+              } catch(e) {
+                console.error("Erro ao descodificar o token JWT:", e);
+                this.msgService.add({ key: 'tst', severity: 'error', summary: 'Erro', detail: 'Token de autenticação inválido.' });
+                return;
+              }
+
+              // 4. Redireciona para a página inicial
+              setTimeout(() => {
+                this.router.navigate(['/inicio']);
+              }, 1000);
+
+            } else {
+              this.msgService.add({ key: 'tst', severity: 'error', summary: 'Erro', detail: 'Resposta de login inválida do servidor.' });
+            }
+          },
+          error: (err) => {
+            console.error('Erro no login:', err);
+            this.msgService.add({ key: 'tst', severity: 'error', summary: 'Erro', detail: 'Email ou senha inválidos.' });
+          }
+        });
   }
 
-  passwordValidator(control: AbstractControl): { [key: string]: boolean } | null {
-    const value = control.value;
-    const hasNumber = /[0-9]/.test(value);
-    const hasUpperCase = /[A-Z]/.test(value);
-    const hasLowerCase = /[a-z]/.test(value);
-    const hasMinimumLength = value ? value.length >= 6 : false;
-
-    const passwordValid = hasNumber && hasUpperCase && hasLowerCase && hasMinimumLength;
-    if (!passwordValid) {
-      return { 'passwordInvalid': true };
-    }
-    return null;
-  }
-
+  // Seus métodos de validação permanecem os mesmos
   showErrors(){
     Object.keys(this.form.controls).forEach(key => {
-      // @ts-ignore
-      const controlErrors = this.form.get(key).errors;
+      const controlErrors = this.form.get(key)?.errors;
       if (controlErrors != null) {
         Object.keys(controlErrors).forEach(keyError => {
           switch (keyError) {
             case 'required':
-              // @ts-ignore
-              this.showErrorViaToast('O campo ' + this.fieldNames[key] + ' é obrigatório.');
-              break;
-            case 'minlength':
-              // @ts-ignore
-              this.showErrorViaToast('O valor do campo ' + this.fieldNames[key] + ' é menor do que permitido.');
-              break;
-            case 'maxlength':
-              // @ts-ignore
-              this.showErrorViaToast('O valor do campo ' + this.fieldNames[key] + ' é maior do que permitido.');
+              this.showErrorViaToast(`O campo ${this.fieldNames[key]} é obrigatório.`);
               break;
             case 'email':
-              // @ts-ignore
-              this.showErrorViaToast('O valor do campo ' + this.fieldNames[key] + ' não é um e-mail valido.');
+              this.showErrorViaToast(`O campo ${this.fieldNames[key]} não é um e-mail válido.`);
               break;
             default:
-              // @ts-ignore
-              this.showErrorViaToast('Erro no campo ' + this.fieldNames[key] + '.');
+              this.showErrorViaToast(`Erro no campo ${this.fieldNames[key]}.`);
               break;
           }
         });
       }
     });
   }
-  showErrorViaToast(message: string = "") {
-    this.msgService.add({ key: 'tst', severity: 'error', summary: 'Mensagem de Erro', detail: message ? message : 'Validação falhou' });
+
+  showErrorViaToast(message: string) {
+    this.msgService.add({ key: 'tst', severity: 'error', summary: 'Erro de Validação', detail: message });
   }
 }
