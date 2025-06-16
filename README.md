@@ -136,12 +136,6 @@ A seguir, a documentação visual da arquitetura e dos principais fluxos do sist
 **2. Confirmação do Pagamento (Webhook):**
 ![Editor _ Mermaid Chart-2025-06-16-210002](https://github.com/user-attachments/assets/573db714-3082-4b84-a7a1-feae92b537d3)
 
-### Diagrama de Atividades
-
-**Descrição:** O diagrama abaixo ilustra o fluxo de trabalho do caso de uso **"Solicitar Adoção de um Animal"** do ponto de vista do usuário.
-
-![Fluxo de Adoção](caminho/para/sua/imagem_diagrama_atividades.png)
-
 ---
 
 ## 📝 Licença
