@@ -5,6 +5,7 @@ public class AnimalResponse
   public int Id { get; set; }
   public int InstitutionId { get; set; }
   public string Name { get; set; }
+  public string? Cor { get; set; }
   public string Sex{ get; set; }
   public string PetSize { get; set; }
   public DateTime BirthDate { get; set; }

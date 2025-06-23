@@ -36,8 +36,6 @@ import {ToastModule} from "primeng/toast";
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
-  // <<< CORREÇÃO AQUI >>>
-  // Adiciona o MessageService à lista de providers do componente.
   providers: [MessageService]
 })
 export class LoginComponent{

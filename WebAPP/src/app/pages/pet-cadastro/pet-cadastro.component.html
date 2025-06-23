@@ -28,8 +28,23 @@
             </span>
       </div>
 
-      <div class="flex gap-3">
 
+
+
+      <div class="flex gap-3">
+          <div class="field w-full">
+            <span class="p-float-label">
+                <input
+                        type="text"
+                        id="inputtext"
+                        pInputText
+                        [(ngModel)]="Cor"
+                        formControlName="Cor"
+                        pattern="[a-zA-Z]+"
+                />
+                <label for="inputtext">Cor</label>
+            </span>
+          </div>
         <div class="field w-full">
             <span class="p-float-label">
                 <p-dropdown

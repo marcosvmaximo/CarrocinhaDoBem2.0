@@ -50,6 +50,8 @@ export class PetCadastroComponent {
 
   name: string = "";
 
+  Cor: string = "";
+
   especies: any[];
 
   especie: any;
@@ -340,6 +342,7 @@ export class PetCadastroComponent {
     sexo: string;
     dataNascimento: string;
     descricao: string
+    Cor: string
   };
 
   get f() { return this.form.controls; }
@@ -354,6 +357,7 @@ export class PetCadastroComponent {
       dataNascimento: ['', [Validators.required, this.validarData]],
       dataResgate: ['', [Validators.required,  this.validarData]],
       descricao: ['', [Validators.maxLength(100)]],
+      Cor: [''],
     });
 
     this.fieldNames = {
@@ -365,6 +369,7 @@ export class PetCadastroComponent {
       dataNascimento: 'Data de Nascimento',
       dataResgate: 'Data de Resgate',
       descricao: 'Descrição',
+      Cor: 'Cor'
     };
 
     this.especies = [
@@ -430,6 +435,7 @@ export class PetCadastroComponent {
     formData.append('birthDate', this.form.get('dataNascimento')?.value.toISOString());
     formData.append('rescueDate', this.form.get('dataResgate')?.value.toISOString());
     formData.append('description', this.form.get('descricao')?.value);
+    formData.append('Cor', this.form.get('Cor')?.value);
     formData.append('animalPic', this.petImageBinary);
     formData.append('InstitutionId', '1');
 

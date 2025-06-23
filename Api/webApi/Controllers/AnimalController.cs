@@ -37,6 +37,8 @@ namespace webApi.Controllers
           {
             ("name", "desc") => query.OrderByDescending(a => a.Name),
             ("name", "asc") => query.OrderBy(a => a.Name),
+            ("Cor", "desc") => query.OrderByDescending(a => a.Cor),
+            ("Cor", "asc") => query.OrderBy(a => a.Cor),
             ("rescueDate", "desc") => query.OrderByDescending(a => a.RescueDate),
             ("rescueDate", "asc") => query.OrderBy(a => a.RescueDate),
             ("birthDate", "desc") => query.OrderByDescending(a => a.BirthDate),
@@ -106,6 +108,7 @@ namespace webApi.Controllers
             animal.BirthDate = updatedAnimal.BirthDate;
             animal.RescueDate = updatedAnimal.RescueDate;
             animal.Name = updatedAnimal.Name;
+            animal.Cor = updatedAnimal.Cor;
             animal.Sex = updatedAnimal.Sex;
             animal.Breed = updatedAnimal.Breed;
             animal.Species = updatedAnimal.Species;

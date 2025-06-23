@@ -22,6 +22,11 @@ public class AnimalMap : IEntityTypeConfiguration<Animal>
         .HasColumnType("VARCHAR(100)")
         .IsRequired();
 
+      builder.Property(a => a.Cor)
+              .HasColumnName("AnimalCor")
+              .HasColumnType("VARCHAR(100)")
+              .IsRequired();
+
       builder.Property(a => a.Sex)
         .HasColumnName("Sex")
         .HasColumnType("INT")

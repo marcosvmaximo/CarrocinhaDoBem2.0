@@ -31,6 +31,6 @@ export class AuthService {
 
   obterIdLogado() {
     const user = JSON.parse(localStorage.getItem('user')!);
-    return user.id;
+    return user.Id;
   }
 }

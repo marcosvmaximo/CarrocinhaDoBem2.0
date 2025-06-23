@@ -2,6 +2,7 @@ export interface IAnimal{
   id: number,
   institutionId: number,
   name: string,
+  Cor: string,
   animalPic: ArrayBuffer,
   sex: string,
   petSize: string,

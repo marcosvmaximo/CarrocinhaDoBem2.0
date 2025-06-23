@@ -44,7 +44,8 @@ namespace webApi.Controllers
         [Authorize]
         public async Task<ActionResult<Donation>> CreateDonation([FromBody] DonationRequestDto donationDto)
         {
-            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // CORREÇÃO: Usar "nameid" para encontrar o ID do usuário no token.
+            var userIdString = User.FindFirstValue("nameid");
             if (!int.TryParse(userIdString, out var userId))
             {
                 return Unauthorized("Token de utilizador inválido.");
@@ -73,7 +74,8 @@ namespace webApi.Controllers
             var donation = await _context.Donations.FindAsync(id);
             if (donation == null) return NotFound("Doação não encontrada.");
 
-            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // CORREÇÃO: Usar "nameid" para verificar a permissão do usuário.
+            var userIdString = User.FindFirstValue("nameid");
             if (donation.UserId.ToString() != userIdString)
             {
                 return Forbid("Você não tem permissão para pagar esta doação.");
@@ -170,11 +172,19 @@ namespace webApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize] // Apenas utilizadores logados podem apagar as suas próprias doações (lógica a ser adicionada)
+        [Authorize]
         public async Task<IActionResult> DeleteDonation(int id)
         {
              var donation = await _context.Donations.FindAsync(id);
              if (donation == null) return NotFound("Doação não encontrada");
+
+             // CORREÇÃO: Usar "nameid" para verificar a permissão de exclusão.
+             var userIdString = User.FindFirstValue("nameid");
+             if (donation.UserId.ToString() != userIdString && !User.IsInRole("Admin"))
+             {
+                return Forbid("Você não tem permissão para deletar esta doação.");
+             }
+
              _context.Donations.Remove(donation);
              await _context.SaveChangesAsync();
              return NoContent();

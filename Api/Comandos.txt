@@ -87,6 +87,9 @@ dotnet tool restore
 dotnet ef database update
 
 
+# corrigir erro de certificado
+
+dotnet dev-certs https --trust
 
 
 

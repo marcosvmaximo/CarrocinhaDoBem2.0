@@ -16,6 +16,10 @@ public class Animal : ModelBase
     [StringLength(100, ErrorMessage = "O nome do animal não pode ter mais de 100 caracteres.")]
     public string Name { get; set; }
 
+    [DisplayName("Cor")]
+        [Required(ErrorMessage = "A cor do animal é obrigatório.")]
+        public string Cor { get; set; }
+
     [DisplayName("Sexo")]
     [Required(ErrorMessage = "O Sexo é obrigatório.")]
     public ESexoAnimal Sex{ get; set; }

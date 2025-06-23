@@ -6,6 +6,7 @@ public class AnimalRequest
 {
   public int InstitutionId { get; set; }
   public string Name { get; set; }
+  public string Cor { get; set; }
   public ESexoAnimal Sex{ get; set; }
   public EPorteAnimal PetSize { get; set; }
   public DateTime BirthDate { get; set; }
