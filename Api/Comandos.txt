@@ -85,3 +85,407 @@ Criar o arquivo dotnet-tools.json
 }
 dotnet tool restore
 dotnet ef database update
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# Objetivo:
+# Este documento serve como um guia passo a passo completo para duas tarefas
+# essenciais em um projeto full-stack:
+#
+# 1. Criar uma funcionalidade nova com CRUD (Create, Read, Update, Delete) completo.
+#    - Exemplo prático: Entidade "Notícia".
+#
+# 2. Adicionar um novo campo a uma funcionalidade existente, atualizando
+#    todas as camadas da aplicação (backend, banco de dados e frontend).
+#    - Exemplo prático: Campo "Temperamento" na entidade "Animal".
+#
+# Este roteiro foi projetado para ser usado como material de estudo e como um
+# guia prático durante uma prova de autoria ou desenvolvimento.
+#
+
+#---------------------------------------------------------------------------------#
+#                                                                                 #
+#      PARTE 1: CRIANDO UM CRUD COMPLETO PARA UMA NOVA ENTIDADE ("NOTÍCIA")         #
+#                                                                                 #
+#---------------------------------------------------------------------------------#
+
+#
+# Nesta seção, vamos criar toda a estrutura para gerenciar notícias no sistema.
+# Uma instituição poderá criar, ler, atualizar e apagar notícias.
+#
+
+#==================================================#
+# ETAPA 1.1: BACKEND - Modelo e Banco de Dados     #
+#==================================================#
+
+### PASSO 1: CRIAR O MODELO `Noticia.cs` ###
+
+# O modelo é a representação da nossa tabela em C#.
+
+# 1. Crie o arquivo: `Api/webApi/Models/Noticia.cs`
+# 2. Adicione o seguinte código:
+
+```csharp
+// ---- CONTEÚDO PARA Api/webApi/Models/Noticia.cs ----
+
+using webApi.Models.Base;
+using System; // Necessário para o DateTime
+
+namespace webApi.Models
+{
+    // A classe Noticia herda de ModelBase para já ter Id, CreatedAt, etc.
+    public class Noticia : ModelBase
+    {
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public DateTime PublishedDate { get; set; }
+
+        // Define a chave estrangeira para o relacionamento com a tabela Institution.
+        // Isso garante que cada notícia pertence a uma instituição.
+        public int InstitutionId { get; set; }
+        public Institution Institution { get; set; }
+    }
+}
+
+PASSO 2: CRIAR O MAPEAMENTO NoticiaMap.cs
+O mapeamento define as regras da tabela no banco de dados (nome da tabela,
+tipos de coluna, tamanhos, relacionamentos, etc.).
+1. Crie o arquivo: Api/webApi/Context/Mappings/NoticiaMap.cs
+2. Adicione o seguinte código:
+// ---- CONTEÚDO PARA Api/webApi/Context/Mappings/NoticiaMap.cs ----
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using webApi.Models;
+
+namespace webApi.Context.Mappings
+{
+    public class NoticiaMap : IEntityTypeConfiguration<Noticia>
+    {
+        public void Configure(EntityTypeBuilder<Noticia> builder)
+        {
+            // Define o nome da tabela no banco de dados
+            builder.ToTable("Noticia");
+
+            // Define a chave primária
+            builder.HasKey(n => n.Id);
+
+            // Configura a coluna 'Title'
+            builder.Property(n => n.Title)
+                .IsRequired() // Campo obrigatório
+                .HasMaxLength(200); // Tamanho máximo
+
+            // Configura a coluna 'Content'
+            builder.Property(n => n.Content)
+                .IsRequired()
+                .HasColumnType("TEXT"); // Ideal para textos longos
+
+            // Configura a coluna 'PublishedDate'
+            builder.Property(n => n.PublishedDate)
+                .IsRequired();
+
+            // Configura o relacionamento: Uma Notícia (HasOne) tem uma Instituição.
+            // Uma Instituição (WithMany) pode ter várias notícias.
+            builder.HasOne(n => n.Institution)
+                .WithMany() // Como não há uma lista de Notícias em Institution, WithMany() é suficiente.
+                .HasForeignKey(n => n.InstitutionId)
+                .IsRequired();
+        }
+    }
+}
+
+PASSO 3: ATUALIZAR O DataContext.cs
+Precisamos registrar a nova entidade no contexto do Entity Framework.
+1. Abra o arquivo: Api/webApi/Context/DataContext.cs
+2. Adicione a seguinte linha dentro da classe DataContext:
+// ---- LINHA PARA ADICIONAR EM Api/webApi/Context/DataContext.cs ----
+public DbSet<Noticia> Noticias { get; set; }
+
+PASSO 4: GERAR A "MIGRATION"
+Este comando lê as mudanças no código e gera um script para alterar o banco.
+1. Abra o terminal e navegue até a pasta da API:
+cd caminho/para/seu/projeto/Api/webApi
+2. Execute o comando:
+dotnet ef migrations add AddNoticiaEntity
+
+(Um novo arquivo será criado na pasta Migrations)
+PASSO 5: APLICAR A "MIGRATION" AO BANCO DE DADOS
+Este comando executa o script gerado e cria a tabela no MySQL.
+1. No mesmo terminal, execute:
+dotnet ef database update
+
+FIM DA ETAPA DE BANCO DE DADOS! A tabela Noticia agora existe.
+#==================================================#
+
+ETAPA 1.2: BACKEND - API Controller (Endpoints)
+#==================================================#
+
+PASSO 6: CRIAR O CONTROLLER NoticiaController.cs
+O controller define os endpoints (URLs) que o frontend irá chamar.
+1. Crie o arquivo: Api/webApi/Controllers/NoticiaController.cs
+2. Adicione o esqueleto do controller com a injeção de dependência:
+// ---- CONTEÚDO PARA Api/webApi/Controllers/NoticiaController.cs ----
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using webApi.Context;
+using webApi.Models;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace webApi.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")] // A rota será /api/noticia
+    public class NoticiaController : ControllerBase
+    {
+        private readonly DataContext _context;
+
+        // O DataContext é injetado automaticamente pelo sistema de injeção de dependência do .NET.
+        public NoticiaController(DataContext context)
+        {
+            _context = context;
+        }
+
+        // =======================================================
+        // AQUI DENTRO VAMOS INSERIR OS MÉTODOS DO CRUD (C, R, U, D)
+        // =======================================================
+
+        // CREATE: Criar uma nova notícia
+        // Endpoint: POST /api/noticia
+        [HttpPost]
+        public async Task<ActionResult<Noticia>> CreateNoticia(Noticia noticia)
+        {
+            _context.Noticias.Add(noticia);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetNoticiaById), new { id = noticia.Id }, noticia);
+        }
+
+        // READ (All): Obter todas as notícias
+        // Endpoint: GET /api/noticia
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Noticia>>> GetNoticias()
+        {
+            return await _context.Noticias
+                                 .Include(n => n.Institution) // Inclui dados da instituição relacionada
+                                 .OrderByDescending(n => n.PublishedDate) // Ordena pelas mais recentes
+                                 .ToListAsync();
+        }
+
+        // READ (By ID): Obter uma notícia específica
+        // Endpoint: GET /api/noticia/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Noticia>> GetNoticiaById(int id)
+        {
+            var noticia = await _context.Noticias
+                                          .Include(n => n.Institution)
+                                          .FirstOrDefaultAsync(n => n.Id == id);
+
+            if (noticia == null)
+            {
+                return NotFound(); // Retorna erro 404 se não encontrar
+            }
+            return Ok(noticia);
+        }
+
+        // UPDATE: Atualizar uma notícia existente
+        // Endpoint: PUT /api/noticia/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateNoticia(int id, Noticia noticia)
+        {
+            if (id != noticia.Id)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(noticia).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Noticias.Any(e => e.Id == id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent(); // Sucesso, sem conteúdo para retornar
+        }
+
+        // DELETE: Apagar uma notícia
+        // Endpoint: DELETE /api/noticia/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNoticia(int id)
+        {
+            var noticia = await _context.Noticias.FindAsync(id);
+            if (noticia == null)
+            {
+                return NotFound();
+            }
+
+            _context.Noticias.Remove(noticia);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+    }
+}
+
+FIM DA ETAPA DE API! Você agora tem um CRUD completo e funcional para Notícias.
+Você pode rodar a API (dotnet run) e testar os endpoints no Swagger.
+#---------------------------------------------------------------------------------#
+
+PARTE 2: ADICIONANDO UM NOVO CAMPO A UMA ENTIDADE EXISTENTE ("ANIMAL")
+#---------------------------------------------------------------------------------#
+
+Nesta seção, vamos adicionar o campo "Temperamento" a um animal e fazer com que
+ele apareça em todo o fluxo: do banco de dados até a tela do usuário.
+#==================================================#
+
+ETAPA 2.1: BACKEND - Modificando a Entidade
+#==================================================#
+
+PASSO 1: ATUALIZAR O MODELO Animal.cs
+1. Abra o arquivo: Api/webApi/Models/Animal.cs
+2. Adicione a propriedade Temperament:
+// ---- LINHA PARA ADICIONAR DENTRO DA CLASSE Animal ----
+public string Temperament { get; set; }
+
+PASSO 2: ATUALIZAR O MAPEAMENTO AnimalMap.cs
+1. Abra o arquivo: Api/webApi/Context/Mappings/AnimalMap.cs
+2. Adicione a configuração da nova coluna:
+// ---- LINHA PARA ADICIONAR DENTRO DO MÉTODO Configure() ----
+builder.Property(a => a.Temperament).HasMaxLength(200);
+
+PASSO 3: ATUALIZAR OS DTOS
+É crucial atualizar os "contratos" da API (Data Transfer Objects).
+1. Abra o arquivo de Requisição: Api/webApi/Models/Requests/AnimalRequest.cs
+2. Adicione a propriedade:
+public string Temperament { get; set; }
+
+3. Abra o arquivo de Resposta: Api/webApi/Models/Responses/AnimalResponse.cs
+4. Adicione a mesma propriedade:
+public string Temperament { get; set; }
+
+PASSO 4: ATUALIZAR O AnimalController.cs
+Garanta que o novo campo seja salvo, atualizado e retornado pela API.
+1. Abra o arquivo: Api/webApi/Controllers/AnimalController.cs
+2. No método RegisterAnimal() (POST), atualize a criação do objeto:
+// Em RegisterAnimal()
+var animal = new Animal
+{
+    // ... outras propriedades
+    Temperament = request.Temperament, // << ADICIONE AQUI
+    // ...
+};
+
+3. No método Update() (PUT), atualize a atribuição de valores:
+// Em Update()
+animalDb.Temperament = request.Temperament; // << ADICIONE AQUI
+
+4. No método GetAll() (GET), atualize a criação da resposta:
+// Em GetAll(), dentro do .Select(animal => new AnimalResponse...
+Temperament = animal.Temperament, // << ADICIONE AQUI
+
+#==================================================#
+
+ETAPA 2.2: ATUALIZANDO O BANCO DE DADOS
+#==================================================#
+
+PASSO 5: GERAR A NOVA "MIGRATION"
+1. No terminal, na pasta Api/webApi, execute:
+dotnet ef migrations add AddTemperamentToAnimal
+
+PASSO 6: APLICAR A NOVA "MIGRATION"
+1. No mesmo terminal, execute:
+dotnet ef database update
+
+FIM DA ETAPA DE BANCO DE DADOS E BACKEND! A coluna foi adicionada.
+#==================================================#
+
+ETAPA 2.3: FRONTEND - Exibindo a Informação
+#==================================================#
+
+PASSO 7: ATUALIZAR A INTERFACE IAnimal.ts
+O frontend precisa "conhecer" o novo campo.
+1. Abra o arquivo: WebAPP/src/app/pages/catalogo-adocao/model/IAnimal.ts
+2. Adicione a nova propriedade (usando a convenção camelCase):
+// ---- LINHA PARA ADICIONAR DENTRO DA INTERFACE IAnimal ----
+temperament: string;
+
+PASSO 8: EXIBIR O CAMPO NO CATÁLOGO
+Vamos mostrar o temperamento no card de cada animal.
+1. Abra o arquivo: WebAPP/src/app/pages/catalogo-adocao/catalogo-adocao.component.html
+2. Encontre o card do animal e adicione o HTML para exibir a nova informação:
+<!-- Adicione este trecho dentro do card do animal, perto das outras infos -->
+<div class="animal-info mt-2">
+  <p class="mb-0">
+    <strong>Temperamento:</strong> {{ animal.temperament }}
+  </p>
+</div>
+
+PASSO 9: ADICIONAR O CAMPO AO FORMULÁRIO DE CADASTRO
+Para permitir que os usuários insiram o temperamento.
+1. Abra o HTML do formulário: WebAPP/src/app/pages/pet-cadastro/pet-cadastro.component.html
+2. Adicione o campo de input para o temperamento:
+<!-- Adicione este bloco junto com os outros campos do formulário -->
+<div class="field col-12">
+    <label for="temperament">Temperamento</label>
+    <input pInputText id="temperament" type="text" formControlName="temperament" class="w-full" />
+</div>
+
+3. Abra o TypeScript do formulário: WebAPP/src/app/pages/pet-cadastro/pet-cadastro.component.ts
+4. Adicione o temperament ao FormGroup na inicialização do formulário:
+// Dentro de this.form = this.fb.group({...})
+// ...
+temperament: [''], // << ADICIONE AQUI
+// ...
+
+5. Verifique o serviço de cadastro: WebAPP/src/app/pages/pet-cadastro/pet-cadastro.service.ts
